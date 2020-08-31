@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Folder Include="ClientApp\src\components\auth\" />
+    <Folder Include="ClientApp\src\components\services\" />
     <Folder Include="ClientApp\src\img\" />
   </ItemGroup>
 

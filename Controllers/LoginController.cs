@@ -90,7 +90,6 @@ namespace AuthReg.Controllers
             var empty = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.UserName == user.UserName);
-
             
             //var arr = empty[0].Password;
             
