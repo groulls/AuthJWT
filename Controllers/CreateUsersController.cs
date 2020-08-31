@@ -19,110 +19,51 @@ namespace AuthReg.Controllers
     {
         private readonly AppDbContext _context;
 
-        //private readonly UserManager<User> _userManager;
-        //private readonly SignInManager<User> _signInManager;
-     
-
         public CreateUsersController(AppDbContext context)
         {
             _context = context;
-            //_userManager = userManager;
-            //_signInManager = signInManager;
         }
 
-        public string CreateSalt (int size)
-        {
-            var rng = new RNGCryptoServiceProvider();
-            var buff = new byte[size];
-            rng.GetBytes(buff);
-            return Convert.ToBase64String(buff);
+        #region Хэширование методом SHA256
+        //public string CreateSalt (int size)
+        //{
+        //    var rng = new RNGCryptoServiceProvider();
+        //    var buff = new byte[size];
+        //    rng.GetBytes(buff);
+        //    return Convert.ToBase64String(buff);
 
-        }
+        //}
+                
+        //public string GenerateSHA256Hash (User user, string salt)
+        //{
 
-        public string GenerateSHA256Hash (User user, string salt)
-        {
-     
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(user.Password + salt);
-            SHA256Managed sHA256Managed = new SHA256Managed();
+        //    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(user.Password + salt);
+        //    SHA256Managed sHA256Managed = new SHA256Managed();
 
-            byte[] hash = sHA256Managed.ComputeHash(bytes);
+        //    byte[] hash = sHA256Managed.ComputeHash(bytes);
 
-            return ByteArrayToHexString(hash);
-        }
+        //    return ByteArrayToHexString(hash);
+        //}
 
-        private string ByteArrayToHexString(byte[] hash)
-        {
-            StringBuilder hex = new StringBuilder(hash.Length * 2);
-            foreach (byte b in hash)
-                hex.AppendFormat("{0:x2}", b);
-            return hex.ToString();
-        }
-
-        // GET: api/Users
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
-        {
-            return await _context.Users.ToListAsync();
-        }
-
-        // GET: api/Users/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return user;
-        }
-
-        // PUT: api/Users/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
-        {
-            if (id != user.UserID)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
+        //private string ByteArrayToHexString(byte[] hash)
+        //{
+        //    StringBuilder hex = new StringBuilder(hash.Length * 2);
+        //    foreach (byte b in hash)
+        //        hex.AppendFormat("{0:x2}", b);
+        //    return hex.ToString();
+        //}
+        #endregion
 
          // POST: api/Users
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost("registry")]
+        //[ValidateAntiForgeryToken]
         public async Task<ActionResult<User>> PostAuth(User user)
         {
-
             //string salt = CreateSalt(10);
             //string hash = GenerateSHA256Hash(user, salt);
-
-            //user.Password = hash;
+            //user.Password = hash; 
 
             var nickname = await _context.Users.Where(u => u.UserName == user.UserName || u.Email == user.Email).ToArrayAsync();
 
@@ -133,25 +74,19 @@ namespace AuthReg.Controllers
             else
             {
                 PasswordHasher<string> pswHash = new PasswordHasher<string>();
-
                 var empty = pswHash.HashPassword(user.UserName, user.Password);
-
-
-                var valid = pswHash.VerifyHashedPassword(user.UserName, empty, user.Password);
-
-
+                
+                Role userRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "user");
                 user.Password = empty;
-
+                if(userRole !=null)
+                {
+                    user.Role = userRole;
+                }
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
                 return CreatedAtAction("GetUser", new { id = user.UserID }, user);
             }
-
-      
-            
-
-
 
             //if (ModelState.IsValid)
             //{
@@ -173,23 +108,6 @@ namespace AuthReg.Controllers
             //}
             //return CreatedAtAction("GetUser", new { id = user.UserID }, user);
 
-            
-        }
-
-        // DELETE: api/Users/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<User>> DeleteUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return user;
         }
 
         private bool UserExists(int id)

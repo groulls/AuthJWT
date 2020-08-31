@@ -23,7 +23,7 @@ namespace AuthReg.Models
             this.key = key;
         }
 
-        public string Authenticate(string username, string password)
+        public string Authenticate(string username, string role)
         {
          //if(!db.Users.Any(u=>u.UserName == username && u.Password ==password)){
          //       return null;
@@ -35,7 +35,8 @@ namespace AuthReg.Models
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, username)
+                    new Claim(ClaimTypes.Name, username),
+                    new Claim(ClaimTypes.Role,role)
                 }),
 
                 Expires = DateTime.UtcNow.AddHours(1),

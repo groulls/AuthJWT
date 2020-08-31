@@ -15,7 +15,6 @@ namespace AuthReg.Controllers
 {
     [Route ("[controller]")]
     [ApiController]
-    [Authorize]
     public class LoginController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -29,6 +28,7 @@ namespace AuthReg.Controllers
 
         // GET: api/Login
         [HttpGet]
+        [Authorize(Roles ="admin")]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             return await _context.Users.ToListAsync();
@@ -48,9 +48,6 @@ namespace AuthReg.Controllers
             return user;
         }
 
-        // PUT: api/Login/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, User user)
         {
@@ -88,18 +85,23 @@ namespace AuthReg.Controllers
         public async Task<ActionResult<User>> PostUser(User user)
         {
             PasswordHasher<string> hasher = new PasswordHasher<string>();
-            var empty = await _context.Users.Where(u=>u.UserName == user.UserName).ToArrayAsync();
+            //var empty = await _context.Users.Include(u=>u.Role).Where(u=>u.UserName == user.UserName).ToArrayAsync();
 
-            var arr = empty[0].Password;
+            var empty = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.UserName == user.UserName);
 
-            if (empty.Length != 0)
+            
+            //var arr = empty[0].Password;
+            
+            if ( empty!= null /*empty.Length != 0*/)
             {
-                var indef = hasher.VerifyHashedPassword(user.UserName, arr, user.Password);
+                var indef = hasher.VerifyHashedPassword(user.UserName, empty.Password, user.Password);
 
                 if(indef.ToString() == "Success")
                 {
                     //return CreatedAtAction("GetUser", new { id = user.UserID }, user);
-                    var token = _authenticationJWT.Authenticate(user.UserName, user.Password);
+                    var token = _authenticationJWT.Authenticate(user.UserName, empty.Role.RoleName);
                     if (token == null)
                         return Unauthorized();
                     else
@@ -123,8 +125,7 @@ namespace AuthReg.Controllers
 
             //_context.Users.Add(user);
             //await _context.SaveChangesAsync();
-
-            
+         
         }
 
         // DELETE: api/Login/5
